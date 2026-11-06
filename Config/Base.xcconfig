@@ -1,0 +1,7 @@
+// Shared build settings. Signing uses the free Personal Team set in
+// Config/Local.xcconfig (not committed; see Local.xcconfig.template).
+// Your Cloud server addresses (host:port, no "http://" since // starts a comment here); set
+// them in Local.xcconfig. Empty means none are prefilled and no HTTP exceptions are added.
+CLOUD_DEFAULT_LOCAL_SERVER =
+CLOUD_DEFAULT_REMOTE_SERVER =
+#include? "Local.xcconfig"

@@ -1,0 +1,9 @@
+// Copy to Local.xcconfig and set the team ID of your free Personal Team
+// (Xcode › Settings › Accounts › your developer account › "<Name> (Personal Team)").
+// Free provisioning profiles expire after 7 days: reinstall weekly.
+DEVELOPMENT_TEAM =
+
+// Your Cloud server: home address and away (e.g. Tailscale) address, as host:port.
+// They're prefilled at sign-in, and plain HTTP is allowed to these two hosts only.
+CLOUD_DEFAULT_LOCAL_SERVER =
+CLOUD_DEFAULT_REMOTE_SERVER =
