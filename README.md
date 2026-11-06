@@ -113,18 +113,34 @@ first provider (`ImmichCloud`); another server only needs its own provider.
 
 ## 🚀 Installation
 
+### Option A: download a release (no Xcode needed)
+
+1. Download **`Photos.ipa`** from [Releases](https://github.com/arrnav/photos-app/releases/latest).
+2. Install it with [Sideloadly](https://sideloadly.io) (Windows or macOS) or [AltStore](https://altstore.io):
+   connect the iPhone, drop in the `.ipa`, and sign in with your own developer account (a free one works).
+3. On the iPhone:
+   - Settings › General › VPN & Device Management › trust your account.
+   - Settings › Privacy & Security › **Developer Mode** › on (the phone restarts).
+4. Open Photos and sign in to your server.
+
+With a free account the app must be re-signed every **7 days**: install the same `.ipa` again (AltStore can do it automatically). Your data is kept.
+
+**Server address:** plain HTTP works on your home network (e.g. `192.168.1.10:2283`). Away from home, use **HTTPS**, or build it yourself (Option B) to allow HTTP to your own Tailscale address.
+
+### Option B: build it yourself
+
 1. Install **Xcode 26** and XcodeGen (`brew install xcodegen`).
-2. Clone the repository and set your signing team:
+2. Clone the repository and set your signing team and server:
    ```sh
    git clone https://github.com/arrnav/photos-app.git && cd photos-app
-   cp Config/Local.xcconfig.template Config/Local.xcconfig   # put your DEVELOPMENT_TEAM in it
+   cp Config/Local.xcconfig.template Config/Local.xcconfig   # set DEVELOPMENT_TEAM and your server addresses
    ```
 3. Connect the iPhone and find its UDID: `xcrun devicectl list devices`.
 4. Build and install a Release build:
    ```sh
    Scripts/reinstall.sh <device-udid>
    ```
-5. On the phone, if asked, trust the developer in Settings › General › VPN & Device Management, and turn on Developer Mode.
+5. On the phone, trust the developer in Settings › General › VPN & Device Management, and turn on Developer Mode.
 
 A free developer account (Personal Team) works. Free profiles last 7 days, so run step 4 again weekly; app data is kept.
 
