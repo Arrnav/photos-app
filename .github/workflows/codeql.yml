@@ -1,0 +1,36 @@
+name: CodeQL
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "17 3 * * 1"
+
+jobs:
+  analyze:
+    name: Analyze (Swift)
+    runs-on: macos-26
+    timeout-minutes: 120
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: swift
+          build-mode: manual
+          queries: security-extended
+      - name: Build
+        run: |
+          xcodegen generate
+          xcodebuild -project Photos.xcodeproj -scheme Photos -configuration Debug \
+            -destination 'generic/platform=iOS' -derivedDataPath build/DerivedData \
+            CODE_SIGNING_ALLOWED=NO build
+      - uses: github/codeql-action/analyze@v3
+        with:
+          category: /language:swift

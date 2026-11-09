@@ -1,0 +1,90 @@
+# swift-openapi-generator config for the Immich client.
+# Only the operations the app uses are generated, plus the sync event
+# payloads, which no operation references directly (they arrive as JSON Lines).
+generate:
+  - types
+  - client
+accessModifier: public
+namingStrategy: idiomatic
+filter:
+  operations:
+    # Connectivity
+    - pingServer
+    - getServerVersion
+    - getAboutInfo
+    # Auth
+    - login
+    - logout
+    - validateAccessToken
+    - getMyUser
+    - getAuthStatus
+    - setupPinCode
+    - unlockAuthSession
+    - lockAuthSession
+    # Sync
+    - getSyncStream
+    - getSyncAck
+    - sendSyncAck
+    - deleteSyncAck
+    # Assets
+    - getAssetInfo
+    - updateAssets
+    - deleteAssets
+    - restoreAssets
+    - createStack
+    - checkBulkUpload
+    - getAssetStatistics
+    - uploadAsset
+    - viewAsset
+    - downloadAsset
+    - playAssetVideo
+    # Albums, partners, memories, search
+    - getAllAlbums
+    - createSharedLink
+    - removeSharedLink
+    - getAlbumInfo
+    - createAlbum
+    - addAssetsToAlbum
+    - removeAssetFromAlbum
+    - getPartners
+    - createProfileImage
+    - updatePartner
+    - createPartner
+    - removePartner
+    - searchUsers
+    - searchMemories
+    - searchAssets
+    - getSearchSuggestions
+    # Server settings (trash retention), people and smart search (machine learning)
+    - getServerConfig
+    - searchSmart
+    - getAllPeople
+    - getPerson
+    - updatePerson
+  schemas:
+    - SyncEntityType
+    - SyncAckV1
+    - SyncResetV1
+    - SyncCompleteV1
+    - SyncAuthUserV2
+    - SyncUserV1
+    - SyncUserDeleteV1
+    - SyncAssetV2
+    - SyncAssetDeleteV1
+    - SyncAssetExifV1
+    - SyncAssetMetadataV1
+    - SyncAssetMetadataDeleteV1
+    - SyncPartnerV1
+    - SyncPartnerDeleteV1
+    - SyncAlbumV2
+    - SyncAlbumDeleteV1
+    - SyncAlbumUserV1
+    - SyncAlbumUserDeleteV1
+    - SyncAlbumToAssetV1
+    - SyncAlbumToAssetDeleteV1
+    - SyncMemoryV2
+    - SyncMemoryDeleteV1
+    - SyncMemoryAssetV1
+    - SyncMemoryAssetDeleteV1
+    - SyncStackV1
+    - SyncStackDeleteV1

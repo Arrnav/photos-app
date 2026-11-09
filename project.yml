@@ -1,0 +1,128 @@
+name: Photos
+options:
+  bundleIdPrefix: com.ethwood
+  deploymentTarget:
+    iOS: "18.0"
+  createIntermediateGroups: true
+configFiles:
+  Debug: Config/Base.xcconfig
+  Release: Config/Base.xcconfig
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    SWIFT_STRICT_CONCURRENCY: complete
+    TARGETED_DEVICE_FAMILY: "1"
+    CODE_SIGN_STYLE: Automatic
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+packages:
+  Core:
+    path: Packages/Core
+  CloudCore:
+    path: Packages/CloudCore
+  ImmichCloud:
+    path: Packages/ImmichCloud
+  ImmichAPI:
+    path: Packages/ImmichAPI
+  Persistence:
+    path: Packages/Persistence
+  Library:
+    path: Packages/Library
+  Backup:
+    path: Packages/Backup
+  Sync:
+    path: Packages/Sync
+  MediaCache:
+    path: Packages/MediaCache
+  GridGeometry:
+    path: Packages/GridGeometry
+  PhotosAppUI:
+    path: Packages/PhotosAppUI
+targets:
+  Photos:
+    type: application
+    platform: iOS
+    sources:
+      - App
+    dependencies:
+      - package: Core
+      - package: ImmichCloud
+      - package: PhotosAppUI
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.ethwood.photos
+        PRODUCT_NAME: Photos
+        # The app's Swift module must not be called "Photos": it would hide the system Photos framework (PhotoKit).
+        PRODUCT_MODULE_NAME: PhotosApp
+        MARKETING_VERSION: "0.7.1"
+        CURRENT_PROJECT_VERSION: "1"
+        GENERATE_INFOPLIST_FILE: NO
+        # The app's own icon, drawn by Scripts/make-app-icon.swift.
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        # The HTTP-exception script below edits the built Info.plist.
+        ENABLE_USER_SCRIPT_SANDBOXING: NO
+    info:
+      path: App/Info.plist
+      properties:
+        CFBundleDisplayName: Photos
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        LSRequiresIPhoneOS: true
+        UILaunchScreen: {}
+        UIApplicationSceneManifest:
+          # Needed for the external display's own scene (the TV shows the current photo).
+          UIApplicationSupportsMultipleScenes: true
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        UIRequiredDeviceCapabilities:
+          - arm64
+        CADisableMinimumFrameDurationOnPhone: true
+        ITSAppUsesNonExemptEncryption: false
+        NSLocalNetworkUsageDescription: Photos connects to your Cloud server on your home network.
+        NSFaceIDUsageDescription: Face ID unlocks your Hidden album.
+        # Background uploads continue on their own; these let iOS wake the app to queue new photos.
+        UIBackgroundModes:
+          - fetch
+          - processing
+        BGTaskSchedulerPermittedIdentifiers:
+          - com.ethwood.photos.backup
+          - com.ethwood.photos.refresh
+        NSPhotoLibraryUsageDescription: Photos shows the photos and videos on this iPhone alongside your Cloud library, and backs them up when backup is on.
+        NSPhotoLibraryAddUsageDescription: Photos saves photos and videos from your Cloud library to this iPhone when you choose Save to This iPhone.
+        # Plain HTTP to Tailscale names (MagicDNS: machine.tailnet-name.ts.net, which Tailscale
+        # encrypts end to end anyway) and to short names on the home network (http://pi:2283).
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
+          NSExceptionDomains:
+            ts.net:
+              NSIncludesSubdomains: true
+              NSExceptionAllowsInsecureHTTPLoads: true
+              # HTTPS there (tailscale serve) uses publicly logged certificates: require that.
+              NSRequiresCertificateTransparency: true
+        # Your server addresses, from Config/Local.xcconfig (not committed): prefilled at sign-in.
+        CloudDefaultLocalServer: $(CLOUD_DEFAULT_LOCAL_SERVER)
+        CloudDefaultRemoteServer: $(CLOUD_DEFAULT_REMOTE_SERVER)
+    # Plain HTTP is also allowed to those two hosts (narrow ATS exceptions, added at build time so
+    # no address is committed). Home-network addresses don't need one; a Tailscale IP address does.
+    postBuildScripts:
+      - name: Allow HTTP to your Cloud server
+        basedOnDependencyAnalysis: false
+        script: |
+          PLIST="${TARGET_BUILD_DIR}/${INFOPLIST_PATH}"
+          BUDDY=/usr/libexec/PlistBuddy
+          for ADDRESS in "${CLOUD_DEFAULT_LOCAL_SERVER}" "${CLOUD_DEFAULT_REMOTE_SERVER}"; do
+            HOST="${ADDRESS#*://}"; HOST="${HOST%%/*}"; HOST="${HOST%%:*}"
+            [ -z "$HOST" ] && continue
+            $BUDDY -c "Add :NSAppTransportSecurity dict" "$PLIST" 2>/dev/null || true
+            $BUDDY -c "Add :NSAppTransportSecurity:NSExceptionDomains dict" "$PLIST" 2>/dev/null || true
+            $BUDDY -c "Add :NSAppTransportSecurity:NSExceptionDomains:$HOST dict" "$PLIST" 2>/dev/null || true
+            $BUDDY -c "Add :NSAppTransportSecurity:NSExceptionDomains:$HOST:NSExceptionAllowsInsecureHTTPLoads bool true" "$PLIST" 2>/dev/null || true
+          done
+schemes:
+  Photos:
+    build:
+      targets:
+        Photos: all
+    run:
+      config: Debug
