@@ -17,7 +17,7 @@
 
 ---
 
-## ✨ What it is
+## What it is
 
 Photos is a personal iPhone app by **ethwood** that puts a self-hosted photo server behind a
 native **iOS 26** interface: a fluid grid, viewer, gestures, menus and Liquid Glass. The phone's own library and the server's library appear as **one timeline**.
@@ -27,20 +27,20 @@ without uploading anything twice.
 The app talks to the server through a small, provider-neutral layer (`CloudCore`). Immich is the
 first provider (`ImmichCloud`); another server only needs its own provider.
 
-## 📍 Status
+## Status
 
-| Milestone | | Notes |
+| Milestone | Status | Notes |
 |---|---|---|
-| M1 Foundations | ✅ | Sign-in, home/away server switching, synced timeline, thumbnail cache |
-| M2 Viewer + UI parity | ✅ | Grid, viewer, Library/Collections/Search, select mode, share screen |
-| M3 Local-first library | ✅ | iPhone + Cloud merged and de-duplicated by checksum; works offline |
-| M4 Live Photos, video, AirPlay | ✅ | Player with zoom, Live Photos, AirPlay, external display |
-| M5 Backup | ✅ | Background uploads; tested with a library of over 250 GB |
-| Editing, subject lift | ✅ | Photo and video editor (tested on a device), long-press subject lift and Live Text |
-| M6 Albums, People, sharing, search | ✅ | Shared albums, partner sharing, People and smart search (remote ML), Sync Albums |
-| M7 Free Up Space, polish | ✅ | Free Up Space, offline thumbnails and Keep Offline, log viewer, accessibility pass |
+| M1 Foundations | Done | Sign-in, home/away server switching, synced timeline, thumbnail cache |
+| M2 Viewer + UI parity | Done | Grid, viewer, Library/Collections/Search, select mode, share screen |
+| M3 Local-first library | Done | iPhone + Cloud merged and de-duplicated by checksum; works offline |
+| M4 Live Photos, video, AirPlay | Done | Player with zoom, Live Photos, AirPlay, external display |
+| M5 Backup | Done | Background uploads; tested with a library of over 250 GB |
+| Editing, subject lift | Done | Photo and video editor (tested on a device), long-press subject lift and Live Text |
+| M6 Albums, People, sharing, search | Done | Shared albums, partner sharing, People and smart search (remote ML), Sync Albums |
+| M7 Free Up Space, polish | Done | Free Up Space, offline thumbnails and Keep Offline, log viewer, accessibility pass |
 
-## 🌟 Features
+## Features
 
 **Library**
 - One timeline of iPhone and Cloud photos, de-duplicated by SHA-1, with small badges showing where each lives (phone, Cloud, or both).
@@ -91,7 +91,7 @@ first provider (`ImmichCloud`); another server only needs its own provider.
 - An account card with the picture taken from your contact card or a photo.
 - Cloud Server Settings: server addresses, accounts, sync, offline and storage, Hidden PIN, and troubleshooting with a log viewer.
 
-## 🧱 Architecture
+## Architecture
 
 | Package | Role |
 |---|---|
@@ -106,7 +106,7 @@ first provider (`ImmichCloud`); another server only needs its own provider.
 | `GridGeometry` | Grid levels and pinch-zoom maths |
 | `PhotosAppUI` | All screens (SwiftUI + UIKit) |
 
-## 📦 Dependencies
+## Dependencies
 
 - [GRDB.swift](https://github.com/groue/GRDB.swift): SQLite database (MIT)
 - [swift-openapi-generator / runtime / urlsession](https://github.com/apple/swift-openapi-generator): API client (Apache 2.0)
@@ -114,7 +114,7 @@ first provider (`ImmichCloud`); another server only needs its own provider.
 - iOS frameworks: SwiftUI, UIKit, PhotoKit, AVFoundation/AVKit, VisionKit, MapKit, BackgroundTasks, MetricKit, Core Image
 - Build tools: Xcode 26, [XcodeGen](https://github.com/yonaskolb/XcodeGen)
 
-## 🖥️ Recommended server setup
+## Recommended server setup
 
 - **[Immich](https://immich.app) v3.3.5** in Docker. A **Raspberry Pi 4 with 2 GB** works. The app keeps to 4 thumbnail requests and 2 uploads at a time.
 - **Storage:** an SSD over USB 3. Keep the Pi on Ethernet, with a DHCP reservation so its home address never changes.
@@ -124,7 +124,7 @@ first provider (`ImmichCloud`); another server only needs its own provider.
   - Enable the hardware watchdog (`RuntimeWatchdogSec=15` in `/etc/systemd/system.conf`).
 - **Faces and smart search:** optional. Run Immich's machine-learning container on a stronger computer (e.g. a Mac) and point the server at it. See Immich's *Remote Machine Learning* guide.
 
-## 🚀 Installation
+## Installation
 
 ### Option A: download a release (no Xcode needed)
 
@@ -159,7 +159,7 @@ With a free account the app must be re-signed every **7 days**: install the same
 
 A free developer account (Personal Team) works. Free profiles last 7 days, so run step 4 again weekly; app data is kept.
 
-## 📱 Usage
+## Usage
 
 **First launch**
 1. Sign in with your server account.
@@ -187,13 +187,13 @@ A free developer account (Personal Team) works. Free profiles last 7 days, so ru
 
 **Free Up Space:** account picture › Free Up Space. Choose a date and what to keep, review, then remove. iOS asks before anything is deleted.
 
-## 🔁 Re-signing (free Personal Team)
+## Re-signing (free Personal Team)
 
 When the app stops launching (an expired profile or certificate), rebuild and reinstall with
 `Scripts/reinstall.sh <udid>`. Xcode creates a fresh certificate and profile. If signing fails,
 check Xcode › Settings › Accounts.
 
-## 🧪 Development
+## Development
 
 ```sh
 Scripts/test.sh            # unit tests for every package that builds on macOS
@@ -212,17 +212,17 @@ Crash and hang reports (MetricKit) appear under Cloud Server Settings › Diagno
 
 Design notes, decisions and security notes: [`docs/DESIGN.md`](docs/DESIGN.md).
 
-## 🔒 Security
+## Security
 
 How the app protects your account and photos, how to report a problem, and the automated checks
 (CodeQL, gitleaks, OSV-Scanner) that run on every push: [`SECURITY.md`](SECURITY.md).
 
-## 🙏 Credits
+## Credits
 
 - **[Immich](https://github.com/immich-app/immich)**: the self-hosted server this app talks to. Its OpenAPI spec is included in `api/` under Immich's licence (AGPL-3.0). The official app was studied for behaviour only; no Immich code is used.
 - This app is independent, uses its own icon, and is not affiliated with any platform vendor.
 - Built by **ethwood**, with Claude (Anthropic) as a pair programmer.
 
-## 📄 License
+## License
 
 GPL-3.0. See [LICENSE](LICENSE).
