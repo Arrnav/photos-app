@@ -6,7 +6,7 @@
 
 **A native iOS photo library for your own server: it looks, feels and moves like a first-class iOS app, with your pictures on hardware you own.**
 
-![Version](https://img.shields.io/badge/version-0.7.1-blue?style=for-the-badge)
+![Version](https://img.shields.io/badge/version-0.7.2-blue?style=for-the-badge)
 ![Status](https://img.shields.io/badge/status-beta-orange?style=for-the-badge)
 ![Platform](https://img.shields.io/badge/iOS-18%2B%20·%20iOS%2026%20Liquid%20Glass-black?style=for-the-badge)
 ![Swift](https://img.shields.io/badge/Swift-6%20strict%20concurrency-F05138?style=for-the-badge&logo=swift&logoColor=white)
@@ -60,8 +60,8 @@ first provider (`ImmichCloud`); another server only needs its own provider.
 
 **Editing**
 - Adjust (Auto, Exposure, Brilliance, Highlights, Shadows, Contrast, Brightness, Black Point, Saturation, Vibrance, Warmth, Tint, Sharpness, Definition, Noise Reduction, Vignette), Filters, Crop (straighten, perspective, aspect ratios, rotate, flip), undo and redo.
-- Video: trim, mute, Audio Mix on videos with spatial audio, and the same adjustments and filters.
-- Nothing is lost: HDR photos keep a gain map; trimmed videos are copied without re-encoding (Dolby Vision included); dates, places and camera details are kept.
+- Video: trim, mute, Audio Mix on videos with spatial audio, and the same adjustments, filters, crop and rotation.
+- Nothing is lost: HDR photos keep a gain map; trimmed videos are copied without re-encoding, and other video edits keep HDR and Dolby Vision; dates, places and camera details are kept.
 - iPhone photos are edited the iOS way (the original is kept, Revert to Original works); the backup uploads the new version and stacks it with the original in Cloud.
 
 **Collections and Search**

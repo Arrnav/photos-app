@@ -53,7 +53,7 @@ targets:
         PRODUCT_NAME: Photos
         # The app's Swift module must not be called "Photos": it would hide the system Photos framework (PhotoKit).
         PRODUCT_MODULE_NAME: PhotosApp
-        MARKETING_VERSION: "0.7.1"
+        MARKETING_VERSION: "0.7.2"
         CURRENT_PROJECT_VERSION: "1"
         GENERATE_INFOPLIST_FILE: NO
         # The app's own icon, drawn by Scripts/make-app-icon.swift.
