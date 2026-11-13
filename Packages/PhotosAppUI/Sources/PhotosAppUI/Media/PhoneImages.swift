@@ -117,18 +117,19 @@ final class PhoneImages {
     /// Writes the asset's file (the one a backup uploads, i.e. the current version) to a
     /// temporary folder, for sharing and copying. The caller deletes the folder.
     func exportFile(localID: String) async throws -> URL {
-        try await Self.exportFile(localID: localID)
+        try await Self.exportFile(localID: localID, in: nil)
     }
 
     /// Off the main thread, so a share waiting for the file can't block on it.
-    nonisolated static func exportFile(localID: String) async throws -> URL {
+    /// `folder`: where to write it (the caller removes it); a new temporary folder if nil.
+    nonisolated static func exportFile(localID: String, in folder: URL?) async throws -> URL {
         guard let asset = PHAsset.fetchAssets(withLocalIdentifiers: [localID], options: nil).firstObject else { throw ChecksumError.assetGone }
         let resources = PHAssetResource.assetResources(for: asset)
         guard let resource = ResourceSelection.uploadResource(among: resources, mediaType: asset.mediaType)
             ?? resources.first(where: { $0.type == .photo || $0.type == .video }) else {
             throw ChecksumError.noUploadResource
         }
-        let folder = FileManager.default.temporaryDirectory.appending(path: "phone-export-\(UUID().uuidString)", directoryHint: .isDirectory)
+        let folder = (folder ?? FileManager.default.temporaryDirectory).appending(path: "phone-export-\(UUID().uuidString)", directoryHint: .isDirectory)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         // IMG_1234.HEIC rather than an edited photo's "FullSizeRender.heic", as in backups.
         let url = folder.appending(path: PhotoKitExporter.uploadName(asset: asset, resources: resources, uploaded: resource))

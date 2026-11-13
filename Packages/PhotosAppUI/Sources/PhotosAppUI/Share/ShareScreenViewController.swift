@@ -475,6 +475,24 @@ final class ShareScreenViewController: UIViewController {
             if let error, !(error is CancellationError) {
                 screen.showMessage((error as? CloudError)?.message ?? (error as? MediaError)?.message ?? error.localizedDescription)
             }
+            if ScreenCapture.isEnabled { screen.selfTestCleanUp() }
+        }
+    }
+
+    /// `-ShareScreenSelfTest`: the share's files exist while it's open and are gone after it closes.
+    private func selfTestCleanUp() {
+        let folder = shareItems.folder
+        func describe() -> String {
+            let files = FileManager.default.enumerator(at: folder, includingPropertiesForKeys: [.totalFileAllocatedSizeKey])?.allObjects as? [URL] ?? []
+            let bytes = files.reduce(0) { $0 + ((try? $1.resourceValues(forKeys: [.totalFileAllocatedSizeKey]))?.totalFileAllocatedSize ?? 0) }
+            return "\(files.filter { !$0.hasDirectoryPath }.map(\.lastPathComponent)) \(ByteCountFormatter.string(fromByteCount: Int64(bytes), countStyle: .file))"
+        }
+        ScreenCapture.log("share files while open: \(describe())")
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(3))
+            self.close()
+            try? await Task.sleep(for: .seconds(35))
+            ScreenCapture.log("share folder 35 s after closing: exists \(FileManager.default.fileExists(atPath: folder.path))")
         }
     }
 
@@ -486,6 +504,7 @@ final class ShareScreenViewController: UIViewController {
         refreshTask?.cancel()
         prepareTask?.cancel()
         shareItems.cancel()
+        shareItems.removeFiles()
         let item = items.indices.contains(currentIndex) ? items[currentIndex] : nil
         let host = optionsHost
         UIView.animate(springDuration: 0.32, bounce: 0) {

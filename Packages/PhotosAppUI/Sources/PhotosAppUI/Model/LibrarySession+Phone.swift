@@ -153,9 +153,9 @@ extension LibrarySession {
     /// server's original (downloaded once, then cached).
     var shareFileSource: ShareItems.FileSource {
         let originals = originals
-        return { entry, progress in
+        return { entry, folder, progress in
             if let localID = entry.localID {
-                let url = try await PhoneImages.exportFile(localID: localID)
+                let url = try await PhoneImages.exportFile(localID: localID, in: folder)
                 progress(1)
                 return url
             }

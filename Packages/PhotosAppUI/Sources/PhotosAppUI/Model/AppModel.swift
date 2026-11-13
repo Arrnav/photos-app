@@ -68,6 +68,7 @@ public final class AppModel {
             }
         }
         if ScreenCapture.isEnabled { ScreenCapture.log("app started") }
+        TempFiles.sweepLeftovers()
         // Test snapshots never outlive the test that took them.
         if !ScreenCapture.isEnabled && !ScreensSelfTest.isEnabled && !EditorSelfTest.isEnabled && !OfflineSelfTest.isEnabled && !VideoEditSelfTest.isEnabled { try? FileManager.default.removeItem(at: ScreenCapture.folder) }
         // `-MLSelfTest`: people, smart search and trash retention from the real server.

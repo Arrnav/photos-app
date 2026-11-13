@@ -27,36 +27,37 @@ struct ShareOptions: Equatable, Sendable {
 /// Prepares one file for sharing from an original, applying the options. Photos stay
 /// lossless unless converted; location removal rewrites metadata only.
 enum ShareExport {
-    static func prepare(original: URL, isVideo: Bool, options: ShareOptions) async throws -> URL {
+    /// Converted files go into a new subfolder of `folder` (the caller removes `folder`).
+    static func prepare(original: URL, isVideo: Bool, options: ShareOptions, in folder: URL) async throws -> URL {
         if options.allPhotosData { return original }
         let convert = options.format == .mostCompatible
         if isVideo {
             let isHEVC = await isHEVCVideo(original)
             guard !options.includeLocation || (convert && isHEVC) else { return original }
-            return try await exportVideo(original, toH264: convert && isHEVC, stripLocation: !options.includeLocation)
+            return try await exportVideo(original, toH264: convert && isHEVC, stripLocation: !options.includeLocation, in: folder)
         }
         let isHEIF = ["heic", "heif"].contains(original.pathExtension.lowercased())
         if convert && isHEIF {
-            return try convertToJPEG(original, stripLocation: !options.includeLocation)
+            return try convertToJPEG(original, stripLocation: !options.includeLocation, in: folder)
         }
         if !options.includeLocation {
-            return try copyWithoutLocation(original)
+            return try copyWithoutLocation(original, in: folder)
         }
         return original
     }
 
-    private static func outputURL(for original: URL, extension ext: String? = nil) throws -> URL {
-        let folder = FileManager.default.temporaryDirectory.appending(path: "share-\(UUID().uuidString)", directoryHint: .isDirectory)
+    private static func outputURL(for original: URL, extension ext: String? = nil, in parent: URL) throws -> URL {
+        let folder = parent.appending(path: "share-\(UUID().uuidString)", directoryHint: .isDirectory)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let base = original.deletingPathExtension().lastPathComponent
         return folder.appending(path: "\(base).\(ext ?? original.pathExtension)")
     }
 
-    private static func copyWithoutLocation(_ original: URL) throws -> URL {
+    private static func copyWithoutLocation(_ original: URL, in folder: URL) throws -> URL {
         guard let source = CGImageSourceCreateWithURL(original as CFURL, nil), let type = CGImageSourceGetType(source) else {
             throw MediaError(kind: .undecodable, message: "The photo couldn’t be prepared for sharing.")
         }
-        let output = try outputURL(for: original)
+        let output = try outputURL(for: original, in: folder)
         guard let destination = CGImageDestinationCreateWithURL(output as CFURL, type, CGImageSourceGetCount(source), nil) else {
             throw MediaError(kind: .undecodable, message: "The photo couldn’t be prepared for sharing.")
         }
@@ -67,14 +68,14 @@ enum ShareExport {
         return output
     }
 
-    static func convertToJPEG(_ original: URL, stripLocation: Bool) throws -> URL {
+    static func convertToJPEG(_ original: URL, stripLocation: Bool, in folder: URL) throws -> URL {
         guard let source = CGImageSourceCreateWithURL(original as CFURL, nil),
               let image = CGImageSourceCreateImageAtIndex(source, 0, nil)
         else { throw MediaError(kind: .undecodable, message: "The photo couldn’t be converted for sharing.") }
         var properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any] ?? [:]
         if stripLocation { properties[kCGImagePropertyGPSDictionary] = nil }
         properties[kCGImageDestinationLossyCompressionQuality] = 0.92
-        let output = try outputURL(for: original, extension: "jpg")
+        let output = try outputURL(for: original, extension: "jpg", in: folder)
         guard let destination = CGImageDestinationCreateWithURL(output as CFURL, UTType.jpeg.identifier as CFString, 1, nil) else {
             throw MediaError(kind: .undecodable, message: "The photo couldn’t be converted for sharing.")
         }
@@ -93,7 +94,7 @@ enum ShareExport {
         return formats.contains { CMFormatDescriptionGetMediaSubType($0) == kCMVideoCodecType_HEVC }
     }
 
-    private static func exportVideo(_ original: URL, toH264: Bool, stripLocation: Bool) async throws -> URL {
+    private static func exportVideo(_ original: URL, toH264: Bool, stripLocation: Bool, in folder: URL) async throws -> URL {
         let asset = AVURLAsset(url: original)
         let preset = toH264 ? AVAssetExportPresetHighestQuality : AVAssetExportPresetPassthrough
         guard let export = AVAssetExportSession(asset: asset, presetName: preset) else {
@@ -105,7 +106,7 @@ enum ShareExport {
             metadata.removeAll { item in item.identifier.map(locationIdentifiers.contains) ?? false }
         }
         export.metadata = metadata
-        let output = try outputURL(for: original, extension: toH264 ? "mp4" : original.pathExtension)
+        let output = try outputURL(for: original, extension: toH264 ? "mp4" : original.pathExtension, in: folder)
         try await export.export(to: output, as: toH264 ? .mp4 : (original.pathExtension.lowercased() == "mp4" ? .mp4 : .mov))
         return output
     }
@@ -126,9 +127,12 @@ final class ShareItems: @unchecked Sendable {
         var thumbnail: UIImage? = nil
     }
 
-    /// Gets the file for an entry (the phone's copy, or the downloaded original), reporting progress 0…1.
-    typealias FileSource = @Sendable (Entry, @escaping @Sendable (Double) -> Void) async throws -> URL
+    /// Gets the file for an entry (the phone's copy, written into the given folder, or the
+    /// downloaded original), reporting progress 0…1.
+    typealias FileSource = @Sendable (Entry, URL, @escaping @Sendable (Double) -> Void) async throws -> URL
     private let fileSource: FileSource
+    /// Every file this share writes lives here, and goes when the share screen closes.
+    let folder = FileManager.default.temporaryDirectory.appending(path: "share-\(UUID().uuidString)", directoryHint: .isDirectory)
     private let lock = NSLock()
     private var _entries: [Entry] = []
     private var _options = ShareOptions()
@@ -217,9 +221,9 @@ final class ShareItems: @unchecked Sendable {
                     let file = try await self.file(for: entry, compatible: false, progress: progress)
                     guard ["heic", "heif"].contains(file.pathExtension.lowercased()) else { return file }
                     // The location was already handled in the first file.
-                    return try ShareExport.convertToJPEG(file, stripLocation: false)
+                    return try ShareExport.convertToJPEG(file, stripLocation: false, in: self.folder)
                 }
-                return try await Self.prepare(entry, options: options, fileSource: fileSource, progress: progress)
+                return try await Self.prepare(entry, options: options, fileSource: fileSource, folder: self.folder, progress: progress)
             }
             prepared[key] = task
             return task
@@ -237,6 +241,17 @@ final class ShareItems: @unchecked Sendable {
     /// Stops any preparation still running (the share screen closed).
     func cancel() {
         lock.withLock { prepared.values.forEach { $0.cancel() } }
+    }
+
+    /// Deletes this share's files. The system copies a file before a destination uses it, so
+    /// this is safe once the share screen has closed; a short delay covers a destination still
+    /// finishing its copy.
+    func removeFiles(after delay: Duration = .seconds(30)) {
+        let folder = folder
+        Task.detached(priority: .utility) {
+            try? await Task.sleep(for: delay)
+            try? FileManager.default.removeItem(at: folder)
+        }
     }
 
     /// Where the file will be; the share options use its extension to pick destinations.
@@ -257,10 +272,10 @@ final class ShareItems: @unchecked Sendable {
         return base.isEmpty ? "Photo" : base
     }
 
-    private static func prepare(_ entry: Entry, options: ShareOptions, fileSource: FileSource, progress: @escaping @Sendable (Double) -> Void) async throws -> URL {
+    private static func prepare(_ entry: Entry, options: ShareOptions, fileSource: FileSource, folder: URL, progress: @escaping @Sendable (Double) -> Void) async throws -> URL {
         let started = Date()
         do {
-            let url = try await prepareFile(entry, options: options, fileSource: fileSource, progress: progress)
+            let url = try await prepareFile(entry, options: options, fileSource: fileSource, folder: folder, progress: progress)
             ShareLog.write("prepared \(entry.fileName) (\(entry.localID == nil ? "Cloud" : "phone")) -> \(url.lastPathComponent) \(ShareLog.size(of: url)) in \(Int(Date().timeIntervalSince(started) * 1000)) ms")
             return url
         } catch {
@@ -269,18 +284,24 @@ final class ShareItems: @unchecked Sendable {
         }
     }
 
-    private static func prepareFile(_ entry: Entry, options: ShareOptions, fileSource: FileSource, progress: @escaping @Sendable (Double) -> Void) async throws -> URL {
-        let original = try await fileSource(entry) { value in progress(value * 0.95) }
-        try Task.checkCancellation()
-        let prepared = try await ShareExport.prepare(original: original, isVideo: entry.isVideo, options: options)
-        // A stable copy named like the photo (IMG_1234.HEIC), which receivers show and keep.
-        let folder = FileManager.default.temporaryDirectory.appending(path: "share-\(UUID().uuidString)", directoryHint: .isDirectory)
+    private static func prepareFile(_ entry: Entry, options: ShareOptions, fileSource: FileSource, folder: URL, progress: @escaping @Sendable (Double) -> Void) async throws -> URL {
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let original = try await fileSource(entry, folder) { value in progress(value * 0.95) }
+        try Task.checkCancellation()
+        let prepared = try await ShareExport.prepare(original: original, isVideo: entry.isVideo, options: options, in: folder)
+        // A stable file named like the photo (IMG_1234.HEIC), which receivers show and keep.
+        // A hard link, not a copy: a 4K video mustn't take its space twice.
+        let named = folder.appending(path: "named-\(UUID().uuidString)", directoryHint: .isDirectory)
+        try FileManager.default.createDirectory(at: named, withIntermediateDirectories: true)
         let ext = prepared.pathExtension.isEmpty ? (entry.isVideo ? "MOV" : "HEIC") : prepared.pathExtension
-        let named = folder.appending(path: baseName(entry.fileName) + "." + ext)
-        try FileManager.default.copyItem(at: prepared, to: named)
+        let target = named.appending(path: baseName(entry.fileName) + "." + ext)
+        do {
+            try FileManager.default.linkItem(at: prepared, to: target)
+        } catch {
+            try FileManager.default.copyItem(at: prepared, to: target)
+        }
         progress(1)
-        return named
+        return target
     }
 }
 
