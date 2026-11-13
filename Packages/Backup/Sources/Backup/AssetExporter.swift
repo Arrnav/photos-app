@@ -110,7 +110,7 @@ public struct PhotoKitExporter: AssetExporter {
     }
 
     /// "IMG_1234" + the uploaded file's extension (".HEIC", ".JPG", ".MOV"…).
-    static func uploadName(asset: PHAsset, resources: [PHAssetResource], uploaded: PHAssetResource) -> String {
+    public static func uploadName(asset: PHAsset, resources: [PHAssetResource], uploaded: PHAssetResource) -> String {
         let original = (asset.value(forKey: "filename") as? String)
             ?? resources.first { $0.type == .photo || $0.type == .video }?.originalFilename
             ?? uploaded.originalFilename

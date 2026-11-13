@@ -1,3 +1,4 @@
+import Backup
 import Core
 import Library
 import Photos
@@ -129,7 +130,8 @@ final class PhoneImages {
         }
         let folder = FileManager.default.temporaryDirectory.appending(path: "phone-export-\(UUID().uuidString)", directoryHint: .isDirectory)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        let url = folder.appending(path: resource.originalFilename)
+        // IMG_1234.HEIC rather than an edited photo's "FullSizeRender.heic", as in backups.
+        let url = folder.appending(path: PhotoKitExporter.uploadName(asset: asset, resources: resources, uploaded: resource))
         let options = PHAssetResourceRequestOptions()
         options.isNetworkAccessAllowed = true
         try await PHAssetResourceManager.default().writeData(for: resource, toFile: url, options: options)
@@ -142,6 +144,6 @@ final class PhoneImages {
         let resources = PHAssetResource.assetResources(for: asset)
         guard let resource = ResourceSelection.uploadResource(among: resources, mediaType: asset.mediaType) ?? resources.first else { return nil }
         let size = (resource.value(forKey: "fileSize") as? NSNumber)?.intValue
-        return (resource.originalFilename, size)
+        return (PhotoKitExporter.uploadName(asset: asset, resources: resources, uploaded: resource), size)
     }
 }

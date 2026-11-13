@@ -69,7 +69,7 @@ public final class AppModel {
         }
         if ScreenCapture.isEnabled { ScreenCapture.log("app started") }
         // Test snapshots never outlive the test that took them.
-        if !ScreenCapture.isEnabled && !ScreensSelfTest.isEnabled && !EditorSelfTest.isEnabled && !OfflineSelfTest.isEnabled { try? FileManager.default.removeItem(at: ScreenCapture.folder) }
+        if !ScreenCapture.isEnabled && !ScreensSelfTest.isEnabled && !EditorSelfTest.isEnabled && !OfflineSelfTest.isEnabled && !VideoEditSelfTest.isEnabled { try? FileManager.default.removeItem(at: ScreenCapture.folder) }
         // `-MLSelfTest`: people, smart search and trash retention from the real server.
         if ProcessInfo.processInfo.arguments.contains("-MLSelfTest") {
             Task { [weak self] in
@@ -102,6 +102,13 @@ public final class AppModel {
                 try? await Task.sleep(for: .seconds(8))
                 guard let session = self?.session else { return }
                 await OfflineSelfTest.run(session: session)
+            }
+        }
+        if VideoEditSelfTest.isEnabled {
+            Task { [weak self] in
+                try? await Task.sleep(for: .seconds(6))
+                guard let session = self?.session else { return }
+                await VideoEditSelfTest.run(session: session)
             }
         }
         if EditorSelfTest.isEnabled {

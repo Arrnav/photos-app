@@ -114,6 +114,12 @@ enum EditRenderer {
             return (f.outputImage ?? image).applyingFilter("CISRGBToneCurveToLinear")
         }
         func temperature(_ image: CIImage, _ warmth: Double) -> CIImage { whiteBalance(image, warmth: warmth, tint: 0) }
+        func blackAndWhite(_ image: CIImage, contrast: Float, points: [(CGFloat, CGFloat)]?) -> CIImage {
+            let f = CIFilter.colorControls(); f.inputImage = image.applyingFilter("CILinearToSRGBToneCurve"); f.saturation = 0; f.contrast = contrast
+            var shaped = f.outputImage ?? image
+            if let points { shaped = curve(shaped, points) }
+            return shaped.applyingFilter("CISRGBToneCurveToLinear")
+        }
         switch filter {
         case .original: return image
         case .vivid: return controls(image, saturation: 1.25, contrast: 1.08)
@@ -122,10 +128,34 @@ enum EditRenderer {
         case .dramatic: return controls(image, saturation: 0.85, contrast: 1.22)
         case .dramaticWarm: return temperature(controls(image, saturation: 0.9, contrast: 1.22), 0.4)
         case .dramaticCool: return temperature(controls(image, saturation: 0.9, contrast: 1.22), -0.4)
-        case .mono: let f = CIFilter.photoEffectMono(); f.inputImage = image; return f.outputImage ?? image
-        case .silvertone: let f = CIFilter.photoEffectTonal(); f.inputImage = image; return controls(f.outputImage ?? image, saturation: 0, contrast: 1.1)
-        case .noir: let f = CIFilter.photoEffectNoir(); f.inputImage = image; return f.outputImage ?? image
+        // Black and white from the same perceptual controls as the other looks: Core Image's
+        // photo effects darken HDR pictures (video, and photos as they're saved).
+        case .mono: return blackAndWhite(image, contrast: 1.06, points: nil)
+        case .silvertone: return blackAndWhite(image, contrast: 1.12, points: [(0, 0.03), (0.25, 0.24), (0.5, 0.52), (0.75, 0.78), (1, 0.98)])
+        case .noir: return blackAndWhite(image, contrast: 1.38, points: [(0, 0), (0.25, 0.18), (0.5, 0.47), (0.75, 0.8), (1, 1)])
         }
+    }
+
+    /// The size a picture of `size` has after the geometry edits (quarter turns swap the sides,
+    /// cropping shrinks it).
+    static func outputSize(of size: CGSize, state: EditState) -> CGSize {
+        geometry(CIImage(color: .black).cropped(to: CGRect(origin: .zero, size: size)), state).extent.size
+    }
+
+    /// The same for a video frame, in whole, even pixels as video encoders need.
+    static func videoRenderSize(upright: CGSize, state: EditState) -> CGSize {
+        let size = outputSize(of: upright, state: state)
+        return CGSize(width: max(2, (size.width / 2).rounded() * 2), height: max(2, (size.height / 2).rounded() * 2))
+    }
+
+    /// One edited video frame that fills `renderSize` exactly, over black.
+    static func videoFrame(_ state: EditState, source: CIImage, renderSize: CGSize, autoFilters: [CIFilter]) -> CIImage {
+        let origin = CGAffineTransform(translationX: -source.extent.minX, y: -source.extent.minY)
+        let image = apply(state, to: source.transformed(by: origin), autoFilters: autoFilters)
+        let extent = image.extent
+        guard extent.width > 0, extent.height > 0, !extent.isInfinite else { return CIImage(color: .black).cropped(to: CGRect(origin: .zero, size: renderSize)) }
+        let fitted = image.transformed(by: CGAffineTransform(scaleX: renderSize.width / extent.width, y: renderSize.height / extent.height))
+        return fitted.composited(over: CIImage(color: .black)).cropped(to: CGRect(origin: .zero, size: renderSize))
     }
 
     /// Straighten (rotate and fill), perspective, crop, quarter turns and flip.

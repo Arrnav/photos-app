@@ -59,6 +59,9 @@ final class EditorModel {
     /// `CNAssetSpatialAudioInfo` (iOS 26) when the video has spatial audio (Audio Mix).
     @ObservationIgnored private var spatialAudio: AnyObject?
     private var videoAsset: AVAsset?
+    /// The video's size as shown (before edits).
+    private(set) var videoSize: CGSize?
+    @ObservationIgnored private var videoAuto: AutoAdjust?
 
     private var undoStack: [EditState] = []
     private var redoStack: [EditState] = []
@@ -127,6 +130,7 @@ final class EditorModel {
         }
         videoAsset = asset
         duration = (try? await asset.load(.duration).seconds) ?? 0
+        videoSize = try? await VideoComposer.uprightSize(of: asset)
         player.replaceCurrentItem(with: AVPlayerItem(asset: asset))
         let box = AssetBox(asset: asset)
         if #available(iOS 26.0, *), CNAssetSpatialAudioInfo.isSupported {
@@ -140,6 +144,7 @@ final class EditorModel {
             renderFilterThumbnails()
         }
         frames = images.map { UIImage(cgImage: $0) }
+        videoAuto = await AutoAdjust.from(asset)
         applyVideoPreview()
     }
 
@@ -171,11 +176,9 @@ final class EditorModel {
     }
 
     @concurrent
-    private static func composition(_ box: AssetBox, state: EditState) async -> CompositionBox? {
+    static func composition(_ box: AssetBox, state: EditState, auto: AutoAdjust?) async -> CompositionBox? {
         guard let asset = box.asset,
-              let composition = try? await AVMutableVideoComposition.videoComposition(with: asset, applyingCIFiltersWithHandler: { request in
-                  request.finish(with: EditRenderer.apply(state, to: request.sourceImage), context: nil)
-              }) else { return nil }
+              let composition = try? await VideoComposer.composition(for: asset, state: state, auto: auto) else { return nil }
         return CompositionBox(composition: composition)
     }
 
@@ -243,8 +246,12 @@ final class EditorModel {
         let state = previewState
         if state.hasVisualChanges {
             let box = AssetBox(asset: videoAsset)
+            let auto = videoAuto
             Task {
-                current.videoComposition = await Self.composition(box, state: state)?.composition
+                let composition = await Self.composition(box, state: state, auto: auto)?.composition
+                // A slower, older render mustn't replace a newer one.
+                guard state == self.previewState else { return }
+                current.videoComposition = composition
             }
         } else {
             current.videoComposition = nil
@@ -255,8 +262,23 @@ final class EditorModel {
         player.isMuted = state.muted
     }
 
+    /// The picture as the crop frame sees it: turned, flipped and straightened, not yet cropped.
+    var cropBaseSize: CGSize {
+        var uncropped = state
+        uncropped.crop = CGRect(x: 0, y: 0, width: 1, height: 1)
+        if item.isVideo { return videoSize.map { EditRenderer.outputSize(of: $0, state: uncropped) } ?? CGSize(width: 1, height: 1) }
+        return preview?.size ?? CGSize(width: 1, height: 1)
+    }
+
+    /// Width ÷ height of the video as the preview shows it now (so the crop frame sits on the picture).
+    var videoAspect: CGFloat? {
+        guard let videoSize else { return nil }
+        let size = EditRenderer.outputSize(of: videoSize, state: previewState)
+        return size.height > 0 ? size.width / size.height : nil
+    }
+
     /// While cropping, the preview shows the whole photo so the crop frame can move back out.
-    private var previewState: EditState {
+    var previewState: EditState {
         var shown = state
         if tool == .crop { shown.crop = CGRect(x: 0, y: 0, width: 1, height: 1) }
         return shown
@@ -294,9 +316,9 @@ final class EditorModel {
 }
 
 /// AVFoundation objects handed between tasks; each is used by one task at a time.
-private struct AssetBox: @unchecked Sendable { let asset: AVAsset? }
+struct AssetBox: @unchecked Sendable { let asset: AVAsset? }
 private struct InfoBox: @unchecked Sendable { let info: AnyObject }
-private struct CompositionBox: @unchecked Sendable { let composition: AVVideoComposition }
+struct CompositionBox: @unchecked Sendable { let composition: AVVideoComposition }
 
 extension EditState.AudioMix {
     @available(iOS 26.0, *)

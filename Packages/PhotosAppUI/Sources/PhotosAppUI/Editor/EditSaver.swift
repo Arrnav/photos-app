@@ -136,18 +136,8 @@ enum EditSaver {
             try await export.export(to: target, as: .mov)
             return
         }
-        let videoComposition = try await AVMutableVideoComposition.videoComposition(with: composition) { request in
-            let image = EditRenderer.apply(state, to: request.sourceImage.clampedToExtent().cropped(to: request.sourceImage.extent))
-            request.finish(with: image, context: nil)
-        }
-        // Cropping and quarter turns change the frame size.
-        if let track = try await composition.loadTracks(withMediaType: .video).first {
-            let natural = try await track.load(.naturalSize)
-            let transform = try await track.load(.preferredTransform)
-            let upright = CGRect(origin: .zero, size: natural).applying(transform).size
-            let rendered = EditRenderer.geometry(CIImage(color: .black).cropped(to: CGRect(origin: .zero, size: CGSize(width: abs(upright.width), height: abs(upright.height)))), state).extent.size
-            videoComposition.renderSize = CGSize(width: (rendered.width / 2).rounded() * 2, height: (rendered.height / 2).rounded() * 2)
-        }
+        let auto = state.auto ? await AutoAdjust.from(source) : nil
+        let videoComposition = try await VideoComposer.composition(for: composition, state: state, auto: auto)
         guard let export = AVAssetExportSession(asset: composition, presetName: AVAssetExportPresetHEVCHighestQuality) else { throw saveError() }
         export.videoComposition = videoComposition
         export.metadata = metadata

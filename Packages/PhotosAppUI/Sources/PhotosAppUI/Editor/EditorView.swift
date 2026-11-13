@@ -118,7 +118,7 @@ struct EditorView: View {
             if model.tool == .crop {
                 Menu {
                     ForEach(CropAspect.allCases) { aspect in
-                        Button(aspect.title) { model.beginChange(); model.state.crop = aspect.rect(for: model.preview?.size ?? CGSize(width: 1, height: 1)) }
+                        Button(aspect.title) { model.beginChange(); model.state.crop = aspect.rect(for: model.cropBaseSize) }
                     }
                 } label: { Image(systemName: "aspectratio") }
                     .accessibilityLabel("Aspect Ratio")
@@ -155,6 +155,8 @@ struct EditorView: View {
         ZStack(alignment: .bottom) {
             if model.item.isVideo {
                 PlayerLayerView(player: model.player)
+                    // Sized to the picture, so the crop frame sits on the video, not the bars around it.
+                    .modifier(FitAspect(ratio: model.videoAspect))
                     .overlay { if model.tool == .crop { CropOverlay(model: model) } }
                     .overlay { if model.isLoading { ProgressView().controlSize(.large) } }
                 if model.tool != .video { videoBar.padding(16) }
@@ -635,6 +637,15 @@ private struct AudioMixPicker: View {
             .padding(.horizontal, 150)
         }
         .scrollIndicators(.hidden)
+    }
+}
+
+/// Fits the view to `ratio` (width ÷ height) once it's known; until then, fills the space.
+private struct FitAspect: ViewModifier {
+    let ratio: CGFloat?
+
+    func body(content: Content) -> some View {
+        if let ratio { content.aspectRatio(ratio, contentMode: .fit) } else { content }
     }
 }
 

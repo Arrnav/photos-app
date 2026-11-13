@@ -133,3 +133,7 @@ Local Swift packages, all in Swift 6 language mode (strict concurrency), assembl
   `-VerifyChecksums`, `-BackupSelfTest`, `-ConnectivitySelfTest`, `-LaunchTiming`, `-ScrollSelfTest`,
   `-ScreensSelfTest`, `-EditorSelfTest`, `-EditorFilesSelfTest`, `-OfflineSelfTest`.
   `-EditorSaveSelfTest` and `-EditorRevertSelfTest` change the newest photo (iOS asks first).
+  `-VideoEditSelfTest` works on a duplicate of a video (`-VideoEditTarget NAME`): every editor tool,
+  with the preview player's frames compared against the edit rendered from the source, the files a
+  save writes, one real save, then the duplicate is deleted (iOS asks). `-VideoEditPreviewOnly` checks
+  the preview on the original without saving anything.
