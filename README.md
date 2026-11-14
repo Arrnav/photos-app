@@ -27,6 +27,18 @@ without uploading anything twice.
 The app talks to the server through a small, provider-neutral layer (`CloudCore`). Immich is the
 first provider (`ImmichCloud`); another server only needs its own provider.
 
+## Screenshots
+
+Photos and personal details are blurred.
+
+| Library | Library, zoomed out | Viewer | Editor |
+|:---:|:---:|:---:|:---:|
+| <img src="docs/screenshots/library.png" width="200" alt="Library grid" /> | <img src="docs/screenshots/library-zoomed-out.png" width="200" alt="Library grid zoomed out" /> | <img src="docs/screenshots/viewer.png" width="200" alt="Photo viewer" /> | <img src="docs/screenshots/editor-crop.png" width="200" alt="Editor, crop tool" /> |
+
+| Collections | Collections, lower down | Account | Cloud Server Settings |
+|:---:|:---:|:---:|:---:|
+| <img src="docs/screenshots/collections.png" width="200" alt="Collections" /> | <img src="docs/screenshots/collections-utilities.png" width="200" alt="Collections: media types and utilities" /> | <img src="docs/screenshots/account.png" width="200" alt="Account card" /> | <img src="docs/screenshots/cloud-server-settings.png" width="200" alt="Cloud Server Settings" /> |
+
 ## Status
 
 | Milestone | Status | Notes |
