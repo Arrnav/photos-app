@@ -1,6 +1,6 @@
 #!/usr/bin/env swift
-// Draws the app icon: an original six-petal flower in the spirit of a photo library icon
-// (ethwood's own design). Usage: swift Scripts/make-app-icon.swift <out.png>
+// Draws the app icon: an original six-petal flower in the spirit of a photo library icon.
+// Usage: swift Scripts/make-app-icon.swift <out.png>
 import AppKit
 
 let size: CGFloat = 1024

@@ -19,7 +19,7 @@
 
 ## What it is
 
-Photos is a personal iPhone app by **ethwood** that puts a self-hosted photo server behind a
+Photos is a personal iPhone app that puts a self-hosted photo server behind a
 native **iOS 26** interface: a fluid grid, viewer, gestures, menus and Liquid Glass. The phone's own library and the server's library appear as **one timeline**.
 Backups use the **same checksums as the official Immich app**, so the two can run side by side
 without uploading anything twice.
@@ -102,6 +102,13 @@ Photos and personal details are blurred.
 **Account and settings**
 - An account card with the picture taken from your contact card or a photo.
 - Cloud Server Settings: server addresses, accounts, sync, offline and storage, Hidden PIN, and troubleshooting with a log viewer.
+
+**Privacy**
+- No analytics, ads, tracking or crash-reporting services, and no account with the developer. The app talks only to your own server.
+- Your photos, the library index and the app's logs stay on your iPhone and your server. Logs leave the phone only if you share them yourself.
+- Signing out removes the account's data from the iPhone, including the Hidden PIN.
+- The developer receives no personal data, so on the app's side there is nothing for privacy laws such as the GDPR to cover. If you host the server for other people, you are responsible for their data on it.
+- The map in a photo's info panel uses iOS's built-in maps service.
 
 ## Architecture
 
@@ -233,7 +240,7 @@ How the app protects your account and photos, how to report a problem, and the a
 
 - **[Immich](https://github.com/immich-app/immich)**: the self-hosted server this app talks to. Its OpenAPI spec is included in `api/` under Immich's licence (AGPL-3.0). The official app was studied for behaviour only; no Immich code is used.
 - This app is independent, uses its own icon, and is not affiliated with any platform vendor.
-- Built by **ethwood**, with Claude (Anthropic) as a pair programmer.
+- Built by one developer, with Claude (Anthropic) as a pair programmer.
 
 ## License
 

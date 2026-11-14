@@ -110,7 +110,7 @@ struct ImmichConnection: CloudConnection {
 
     /// A one-asset shared link; `playAssetVideo` accepts its key (for AirPlay receivers, which fetch the URL themselves).
     func temporaryPublicVideoURL(assetID: String, expiresAt: Date) async throws -> CloudSharedLink {
-        let link = try await client.createSharedLink(assetIDs: [assetID], expiresAt: expiresAt, allowDownload: true, description: "ethwood Photos AirPlay (temporary)")
+        let link = try await client.createSharedLink(assetIDs: [assetID], expiresAt: expiresAt, allowDownload: true, description: "Photos AirPlay (temporary)")
         var components = URLComponents(url: MediaEndpoints.videoPlayback(server: server.url, assetID: assetID), resolvingAgainstBaseURL: false)!
         components.queryItems = [URLQueryItem(name: "key", value: link.key)]
         return CloudSharedLink(id: link.id, url: components.url!, expiresAt: link.expiresAt)
